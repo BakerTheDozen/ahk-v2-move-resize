@@ -14,7 +14,7 @@ InnerRatio := 0.3
     MouseGetPos(&startX, &startY, &targetWin)
     
     ; Exit if clicking on the Taskbar or Desktop
-    if !targetWin || WinGetClass(targetWin) = "Shell_TrayWnd" || WinGetClass(targetWin) = "WorkerW"
+    if !targetWin || WinGetClass(targetWin) = "Shell_TrayWnd" || WinGetClass(targetWin) = "WorkerW" || WinGetClass(targetWin) = "Progman"
         return
 
     WinGetPos(&winX, &winY, , , targetWin)
@@ -32,7 +32,7 @@ InnerRatio := 0.3
     CoordMode("Mouse", "Screen")
     MouseGetPos(&startX, &startY, &targetWin)
     
-    if !targetWin || WinGetClass(targetWin) = "Shell_TrayWnd"
+    if !targetWin || WinGetClass(targetWin) = "Shell_TrayWnd" || WinGetClass(targetWin) = "WorkerW" || WinGetClass(targetWin) = "Progman"
         return
 
     WinGetPos(&winX, &winY, &winW, &winH, targetWin)
@@ -83,6 +83,25 @@ InnerRatio := 0.3
     
     ; Restore System Cursor
     DllCall("SystemParametersInfo", "UInt", 0x0057, "UInt", 0, "Ptr", 0, "UInt", 0)
+}
+
+; --- TOGGLE ALWAYS ON TOP (Shift + Left Click) ---
++LButton::
+{
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(,, &targetWin)
+    
+    ; Exit if clicking on the Taskbar or Desktop
+    if !targetWin || WinGetClass(targetWin) = "Shell_TrayWnd" || WinGetClass(targetWin) = "WorkerW" || WinGetClass(targetWin) = "Progman"
+        return
+
+    ; Toggle state
+    WinSetAlwaysOnTop(-1, targetWin)
+    
+    ; Display confirmation tooltip
+    isTop := (WinGetExStyle(targetWin) & 0x8)
+    ToolTip(isTop ? "Always On Top: ON" : "Always On Top: OFF")
+    SetTimer(() => ToolTip(), -1000) ; Remove tooltip after 1 second
 }
 
 SetResizeCursor(dx, dy) {
