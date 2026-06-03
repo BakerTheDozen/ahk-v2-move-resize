@@ -91,23 +91,63 @@ InnerRatio := 0.3
     CoordMode("Mouse", "Screen")
     MouseGetPos(,, &targetWin)
     
-    ; Exit if clicking on the Taskbar or Desktop
     if !targetWin || WinGetClass(targetWin) = "Shell_TrayWnd" || WinGetClass(targetWin) = "WorkerW" || WinGetClass(targetWin) = "Progman"
         return
 
-    ; Toggle state
     WinSetAlwaysOnTop(-1, targetWin)
     
-    ; Display confirmation tooltip
     isTop := (WinGetExStyle(targetWin) & 0x8)
     ToolTip(isTop ? "Always On Top: ON" : "Always On Top: OFF")
-    SetTimer(() => ToolTip(), -1000) ; Remove tooltip after 1 second
+    SetTimer(() => ToolTip(), -1000)
+}
+
+; --- ADJUST TRANSPARENCY (Left-Shift + Plus / Minus) ---
+<+=::
+<+NumpadAdd::
+{
+    AdjustTransparency(25) ; Increase opacity (make solid)
+}
+
+<+-::
+<+NumpadSub::
+{
+    AdjustTransparency(-25) ; Decrease opacity (make transparent)
+}
+
+
+; --- HELPER FUNCTIONS ---
+
+AdjustTransparency(amt) {
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(,, &targetWin)
+    
+    if !targetWin || WinGetClass(targetWin) = "Shell_TrayWnd" || WinGetClass(targetWin) = "WorkerW" || WinGetClass(targetWin) = "Progman"
+        return
+
+    currentTrans := 255
+    try {
+        val := WinGetTransparent(targetWin)
+        if (val !== "")
+            currentTrans := val
+    } catch {
+        currentTrans := 255
+    }
+
+    newTrans := currentTrans + amt
+    newTrans := Max(128, Min(255, newTrans)) ; Clamps between 128 (50% opacity) and 255 (100% opacity)
+
+    if (newTrans >= 255) {
+        WinSetTransparent("Off", targetWin)
+        ToolTip("Opacity: 100%")
+    } else {
+        WinSetTransparent(newTrans, targetWin)
+        ToolTip("Opacity: " . Round((newTrans / 255) * 100) . "%")
+    }
+    
+    SetTimer(() => ToolTip(), -1000)
 }
 
 SetResizeCursor(dx, dy) {
-    ; System Cursor IDs
-    ; 32642: NWSE (top-left/bottom-right), 32643: NESW (top-right/bottom-left)
-    ; 32644: WE (left/right), 32645: NS (up/down)
     id := 0
     if (dx != 0 && dy != 0)
         id := (dx == dy) ? 32642 : 32643
@@ -117,7 +157,6 @@ SetResizeCursor(dx, dy) {
         id := 32645
 
     cursor := DllCall("LoadCursor", "Ptr", 0, "Ptr", id, "Ptr")
-    ; Loop through system cursors to replace them temporarily
     for system_id in [32512, 32513, 32514, 32515, 32516, 32642, 32643, 32644, 32645]
         DllCall("SetSystemCursor", "Ptr", DllCall("CopyIcon", "Ptr", cursor, "Ptr"), "UInt", system_id)
 }
